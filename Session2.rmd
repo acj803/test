@@ -1,0 +1,96 @@
+
+```{r}
+library(tidyverse)
+```
+```{r}
+library(dplyr)
+```
+
+# Säubern und transformieren der Daten
+### Zuerst Books aufs nötigste reduzieren
+```{r}
+books <- BX_Books %>%
+  select(ISBN,`Book-Title`,`Book-Author`,`Year-Of-Publication`,Publisher)
+```
+
+### Users jetzt
+### Umwandeln in Zahlen 
+### Lasse User älter als 100 oder unter 10 und ohne Alter drin, da die Bewertungen wichtiger sind als das Alter
+```{r}
+users <- BX_Users %>%
+  mutate(Age = as.numeric(Age))
+```
+
+### Ratings jetzt
+```{r}
+ratings <- BX_Book_Ratings %>%
+  left_join(books)
+```
+
+## Ratings zusammenbauen fürs einfache zusammenzähle der Bewertungen
+```{r}
+bestRatings <- ratings %>%
+  group_by(ISBN) %>%
+  summarise(Durchschnittsbewertung = mean(`Book-Rating`), AnzahlBewertungen = n()) %>%
+  filter(AnzahlBewertungen > 5) %>%
+  arrange(desc(Durchschnittsbewertung))
+```
+
+# Lineare Beziehung zwischen Büchern pro Publisher und Bewertungen der Publisher
+## Anzahl der Bücher pro Publisher
+```{r}
+PublisherBooks <- BX_Books %>%
+  select(ISBN, Publisher) %>%
+    group_by(Publisher) %>%
+  summarise(AnzahlBooks = n())
+```
+
+## Durchschnittsbewertungen der Publisher
+```{r}
+VerlagRatings <- merge(BX_Books, bestRatings) %>%
+  select(Durchschnittsbewertung, Publisher) %>%
+  group_by(Publisher) %>%
+  summarise(Durchschnittsbewertung = mean(Durchschnittsbewertung)) %>%
+  arrange(desc(Durchschnittsbewertung))
+```
+
+## Plotbare Liste erstellen
+```{r}
+LinBez <- merge(PublisherBooks, VerlagRatings) %>%
+  select(AnzahlBooks, Durchschnittsbewertung)
+```
+
+## Plotten für Übersichtlichkeit
+```{r}
+plot(LinBez)
+```
+```{r}
+summary(LinBez)
+```
+
+# Haben ältere Bücher mehr Ratings als neue Bücher?
+## Ab wann ist ein Buch als "alt" anzusehen, 2000, 1950 oder 1900?
+## Wenn man bei 2000 die Grenze zwischen alt und neu setzt haben "alte" Bücher generell mehr bewertungen, allerdings liegen diese "alten" Bücher generell zwischen 1990 und 2000
+```{r}
+oldBooks <- merge(bestRatings, books) %>%
+  select(Durchschnittsbewertung, ISBN, `Year-Of-Publication`, AnzahlBewertungen) %>%
+  filter(`Year-Of-Publication` > 0) %>%
+  filter(Durchschnittsbewertung > 0) %>%
+  arrange(desc(AnzahlBewertungen))
+```
+
+## In plottbare Tabelle verwandeln
+```{r}
+oldBooksPlot <- oldBooks%>%
+  select(`Year-Of-Publication`, AnzahlBewertungen)
+```
+
+## Plotten damits übersichtlicher wird
+```{r}
+plot(oldBooksPlot)
+```
+
+## Anderer Plot, vielleicht klarere Linie erkennbar
+```{r}
+scatter.smooth(x=oldBooksPlot$`Year-Of-Publication`, y=oldBooksPlot$AnzahlBewertungen)
+```
