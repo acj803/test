@@ -48,21 +48,24 @@ PublisherBooks <- BX_Books %>%
 ## Durchschnittsbewertungen der Publisher
 ```{r}
 VerlagRatings <- merge(BX_Books, bestRatings) %>%
-  select(Durchschnittsbewertung, Publisher) %>%
+  select(AnzahlBewertungen, Publisher) %>%
   group_by(Publisher) %>%
-  summarise(Durchschnittsbewertung = mean(Durchschnittsbewertung)) %>%
-  arrange(desc(Durchschnittsbewertung))
+  summarise(AnzahlBewertungen = n()) %>%
+  arrange(desc(AnzahlBewertungen))
 ```
 
 ## Plotbare Liste erstellen
 ```{r}
 LinBez <- merge(PublisherBooks, VerlagRatings) %>%
-  select(AnzahlBooks, Durchschnittsbewertung)
+  select(AnzahlBooks, AnzahlBewertungen)
 ```
 
 ## Plotten für Übersichtlichkeit
 ```{r}
 plot(LinBez)
+```
+```{r}
+scatter.smooth(x=LinBez$AnzahlBooks, y=LinBez$AnzahlBewertungen)
 ```
 ```{r}
 summary(LinBez)
